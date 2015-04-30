@@ -7,7 +7,14 @@
 function headr
 {
 	clear
+	local st1="$1"
+	local st2="$2"
+	local st3="$3"
 	echo "Trace manager V 1.0"
+	echo "__________________________________________________________________________________"
+	echo "local dir: ${st1}"
+	echo "remote dir: ${st2}"
+	echo "packets per segment: ${st3}"
 	echo "__________________________________________________________________________________"
 }
 function currDir # looks for a file containing the local dir, if not found asigns current
@@ -33,7 +40,7 @@ function remDir #checks for file containing the remote dir, if not found, ask fo
 }
 function packNum
 {
-	if [[ -a ldir ]]; then
+	if [[ -a pnum ]]; then
         pac_num=`cat pnum`
 	else
         pac_num="100"
@@ -66,9 +73,18 @@ function setPCpath
 }
 function setpacketNum
 {
-	echo "please insert the number of packets of each segment"
+	echo ""
+	echo "please insert the number of packets of each segment:"
+	re='^[0-9]+$'
 	read pamun
-    echo $panum >> pnum
+	if ! [[ $panum =~ $re ]] ; then
+		headr $loc_dir $rem_dir $pac_num
+		echo ""
+		echo "Error: Not a number, try again"
+		setpacketNum
+	else
+		echo $panum >> pnum
+	fi
 }
 
 function menu
@@ -83,19 +99,19 @@ function menu
 	read opt
 	case $opt in
 		1)
-		headr 
+		headr $loc_dir $rem_dir $pac_num 
 		menu
 		;;
 		2)
-		headr $bt_pres $bt_stat
+		headr $loc_dir $rem_dir $pac_num
 		menu
 		;;
 		3)
-		headr $bt_pres $bt_stat
+		headr $loc_dir $rem_dir $pac_num
 		BLEchain b
 		echo "press a key to continue..."
 		read qwe
-		headr $bt_pres $bt_stat
+		headr $loc_dir $rem_dir $pac_num
 		menu
 		;;
 		4)
@@ -105,42 +121,40 @@ function menu
 		bt_stat=`hciconfig|head -3|tail -1|grep "UP\|DOWN"`
 		echo "press a key to continue..."
 		read qwe
-		headr $bt_pres $bt_stat
+		headr $loc_dir $rem_dir $pac_num
 		menu
 		;;
 		5)
-		sudo hciconfig hci0 down
-		bt_stat=`hciconfig|head -3|tail -1|grep "UP\|DOWN"`
-		echo "press a key to continue..."
-		read qwe
-		headr $bt_pres $bt_stat
+		headr $loc_dir $rem_dir $pac_num
+		setpacketNum
 		menu
 		;;
 		6)
 		helpI
-		headr $bt_pres $bt_stat
+		headr $loc_dir $rem_dir $pac_num
 		menu
 		;;
 		7)
 		exit 0
 		;;
 		*)
-		echo "Please select from 1 to 6"
+		echo "Please select from 1 to 7"
 		echo "press a key to continue..."
 		read qwe
-		headr $bt_pres $bt_stat
+		headr $loc_dir $rem_dir $pac_num
 		menu
 		;;
 	esac
+}
 ############################################################
 ############################################################
 #Start of program
 ############################################################
 ############################################################
+#initialization
 currDir
 remDir
 packNum
 
-echo "loc: "$loc_dir" rem: "$rem_dir" packets: "$pac_num
-
-}
+headr $loc_dir $rem_dir $pac_num
+menu

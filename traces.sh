@@ -12,9 +12,9 @@ function headr
 	local st3="$3"
 	echo "Trace manager V 1.0"
 	echo "__________________________________________________________________________________"
-	echo "local dir: ${st1}"
-	echo "remote dir: ${st2}"
-	echo "packets per segment: ${st3}"
+	echo "LOCAL DIR: ${st1}"
+	echo "REMOTE DIR: ${st2}"
+	echo "PACKETS PER SEGMENT: ${st3}"
 	echo "__________________________________________________________________________________"
 }
 function currDir # looks for a file containing the local dir, if not found asigns current
@@ -71,20 +71,24 @@ function setPCpath
 	read redir
     echo $redir >> rdir
 }
-function setpacketNum
+function numcheck
 {
-	echo ""
-	echo "please insert the number of packets of each segment:"
-	re='^[0-9]+$'
-	read pamun
-	if ! [[ $panum =~ $re ]] ; then
+	if [ "$1" -eq "$1" ] 2>/dev/null
+	then
+		echo $1 >> pnum
+	else
 		headr $loc_dir $rem_dir $pac_num
 		echo ""
 		echo "Error: Not a number, try again"
 		setpacketNum
-	else
-		echo $panum >> pnum
 	fi
+}
+function setpacketNum
+{
+	echo ""
+	echo "please insert the number of packets of each segment:"
+	read pamun
+	numcheck $pamun
 }
 
 function menu
@@ -115,13 +119,8 @@ function menu
 		menu
 		;;
 		4)
-		sudo hciconfig hci0 up
-		sudo hciconfig hci0 leadv 3
-		sudo hciconfig hci0 noscan
-		bt_stat=`hciconfig|head -3|tail -1|grep "UP\|DOWN"`
-		echo "press a key to continue..."
-		read qwe
 		headr $loc_dir $rem_dir $pac_num
+		setPCpath
 		menu
 		;;
 		5)

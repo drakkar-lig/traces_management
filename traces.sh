@@ -4,6 +4,12 @@
 # 
 #
 #/////////////////////////////////////////////////////////////////////////////////////////
+function waitt
+{
+	echo ""
+	echo "press Enter to continue..."
+	read qwe
+}
 function headr
 {
 	clear
@@ -23,7 +29,7 @@ function currDir # looks for a file containing the local dir, if not found asign
         loc_dir=`cat ldir`
 	else
         loc_dir=`pwd`
-        echo $loc_dir >> ldir
+        echo $loc_dir > ldir
 	fi
 }
 function remDir #checks for file containing the remote dir, if not found, ask for one
@@ -34,7 +40,7 @@ function remDir #checks for file containing the remote dir, if not found, ask fo
 		echo "Please input the remote path to save the traces with user and host:"
 		echo "user@host:path"
 		read redir
-        echo $redir >> rdir
+        echo $redir > rdir
         rem_dir=$redir
 	fi
 }
@@ -44,7 +50,7 @@ function packNum
         pac_num=`cat pnum`
 	else
         pac_num="100"
-        echo "100" >> pnum
+        echo "100" > pnum
 	fi
 }
 function setRBPpath
@@ -58,8 +64,9 @@ function setRBPpath
 	read lodir
 	if [[ -z "$lodir" ]]; then
 		echo "using last or current directory: " $loc_dir
+		waitt
 	else
-		echo "$lodir"
+    	echo $lodir > ldir
 	fi
 }
 function setPCpath
@@ -69,13 +76,18 @@ function setPCpath
 	echo "Please input the remote path to save the traces with user and host:"
 	echo "user@host:path"
 	read redir
-    echo $redir >> rdir
+	if [[ -z "$redir" ]]; then
+		echo "using last directory: " $rem_dir
+		waitt
+	else
+		echo $redir > rdir
+	fi
 }
 function numcheck
 {
 	if [ "$1" -eq "$1" ] 2>/dev/null
 	then
-		echo $1 >> pnum
+		echo $1 > pnum
 	else
 		headr $loc_dir $rem_dir $pac_num
 		echo ""
@@ -88,47 +100,101 @@ function setpacketNum
 	echo ""
 	echo "please insert the number of packets of each segment:"
 	read pamun
+	if [[ -z "$pamun" ]]; then
+		echo "using last number of packets: " $pac_num
+		waitt
+	else
 	numcheck $pamun
+	fi
+}
+
+function startTrace
+{
+	local st="$1"
+	now="$(date +'%d%m%Y_HM')"
+	file="${now}_traceResult.pcapng" 
+	desc="${now}_Description"
+	var=1
+	echo "" > $desc.txt
+	headr $loc_dir $rem_dir $pac_num
+	echo "A trace will start"
+	waitt
+	while : ; do
+		headr $loc_dir $rem_dir $pac_num
+		echo ""
+		echo "Stage $var:"
+		echo "_____________________________"
+		echo "Please enter a description for this stage or"
+		echo "Type Enter to stop this session"
+		read descr
+		if [[ -z $descr  ]]; then
+			echo "Session ended"
+			if [ $var \= 1 ]; then
+				echo "No packets were captured.."
+				waitt
+			else
+				echo "Do you want to transfer the files?"
+				scp $file $rem_dir
+				scp $desc $rem_dir
+			fi
+		else
+			echo "${var}. ${descr}" >> $desc.txt
+			sudo tshark -c $panum -i wlan0 -w temp.pcapng
+			if [ $var \= 1 ]; then	
+				sudo cp -p temp.pcapng $file
+			else
+				sudo mergecap $file temp.pcapng $file
+			fi
+			((var++))
+		fi
+		
+	done
+
 }
 
 function menu
 {
 	echo "1. Start a wifi segmented trace "
 	echo "2. Start a wifi trace for 100 packets"
-	echo "3. set RBP directory"
-	echo "4. set PC (remote) directory"
-	echo "5. set number of packets for each segment"
+	echo "  3. set RBP directory"
+	echo "  4. set PC (remote) directory"
+	echo "  5. set number of packets for each segment"
 	echo "6. Help"
 	echo "7. Exit"
 	read opt
 	case $opt in
 		1)
 		headr $loc_dir $rem_dir $pac_num 
+		startTrace 1
+		headr $loc_dir $rem_dir $pac_num
 		menu
 		;;
 		2)
+		headr $loc_dir $rem_dir $pac_num
+		startTrace 2
 		headr $loc_dir $rem_dir $pac_num
 		menu
 		;;
 		3)
 		headr $loc_dir $rem_dir $pac_num
-		BLEchain b
-		echo "press a key to continue..."
-		read qwe
+		setRBPpath
 		headr $loc_dir $rem_dir $pac_num
 		menu
 		;;
 		4)
 		headr $loc_dir $rem_dir $pac_num
 		setPCpath
+		headr $loc_dir $rem_dir $pac_num
 		menu
 		;;
 		5)
 		headr $loc_dir $rem_dir $pac_num
 		setpacketNum
+		headr $loc_dir $rem_dir $pac_num
 		menu
 		;;
 		6)
+		headr $loc_dir $rem_dir $pac_num
 		helpI
 		headr $loc_dir $rem_dir $pac_num
 		menu
@@ -138,8 +204,7 @@ function menu
 		;;
 		*)
 		echo "Please select from 1 to 7"
-		echo "press a key to continue..."
-		read qwe
+		waitt
 		headr $loc_dir $rem_dir $pac_num
 		menu
 		;;

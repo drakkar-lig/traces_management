@@ -132,14 +132,17 @@ function startTrace
 			if [ $var \= 1 ]; then
 				echo "No packets were captured.."
 				waitt
+				break
 			else
 				echo "Do you want to transfer the files?"
 				scp $file $rem_dir
 				scp $desc $rem_dir
+				break
 			fi
 		else
 			echo "${var}. ${descr}" >> $desc.txt
-			sudo tshark -c $panum -i wlan0 -w temp.pcapng
+			echo $pac_num
+			sudo tshark -c $pac_num -i wlan0 -w temp.pcapng
 			if [ $var \= 1 ]; then	
 				sudo cp -p temp.pcapng $file
 			else

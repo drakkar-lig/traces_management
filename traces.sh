@@ -111,7 +111,8 @@ function setpacketNum
 function startTrace
 {
 	local st="$1"
-	now="$(date +'%d%m%Y_HM')"
+	rm temp.pcapng
+	now="$(date +'%d%m%Y_%H%M')"
 	file="${now}_traceResult.pcapng" 
 	desc="${now}_Description"
 	var=1
@@ -134,19 +135,27 @@ function startTrace
 				waitt
 				break
 			else
-				echo "Do you want to transfer the files?"
-				scp $file $rem_dir
-				scp $desc $rem_dir
+				echo "transfering the files.. input remote pass..."
+				sudo scp $file $desc.txt $rem_dir
 				break
 			fi
 		else
 			echo "${var}. ${descr}" >> $desc.txt
 			echo $pac_num
-			sudo tshark -c $pac_num -i wlan0 -w temp.pcapng
-			if [ $var \= 1 ]; then	
-				sudo cp -p temp.pcapng $file
+			if [ $st \= 1 ]; then
+				sudo tshark -c $pac_num -i wlan0 -w temp.pcapng
 			else
-				sudo mergecap $file temp.pcapng $file
+				sudo cp -p $file temp2.pcapng
+				sudo tshark -c 100 -i wlan0 -w temp.pcapng
+			fi
+			if [ $var \= 1 ]; then	
+				echo "creating first file form temp"
+				sudo cp -p temp.pcapng $file
+				waitt
+			else
+				echo "merging file with new temp"
+				sudo mergecap temp.pcapng temp2.pcapng -w $file
+				waitt
 			fi
 			((var++))
 		fi

@@ -147,7 +147,7 @@ function startTrace
 			elif [ $st \= 2 ]; then
 				sudo cp -p $file temp2.pcapng
 				sudo tshark -c 100 -i wlan0 -w temp.pcapng
-			elif [[ $st \= 3 ]]; then
+			elif [ $st \= 3 ]; then
 				sudo tshark -i wlan0 -w temp.pcapng
 			fi
 			if [ $var \= 1 ]; then	

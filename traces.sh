@@ -144,9 +144,11 @@ function startTrace
 			echo $pac_num
 			if [ $st \= 1 ]; then
 				sudo tshark -c $pac_num -i wlan0 -w temp.pcapng
-			else
+			elif [ $st \= 2 ]; then
 				sudo cp -p $file temp2.pcapng
 				sudo tshark -c 100 -i wlan0 -w temp.pcapng
+			elif [[ $st \= 3 ]]; then
+				sudo tshark -i wlan0 -w temp.pcapng
 			fi
 			if [ $var \= 1 ]; then	
 				echo "creating first file form temp"
@@ -166,13 +168,14 @@ function startTrace
 
 function menu
 {
-	echo "1. Start a wifi segmented trace "
+	echo "1. Start a segmented wifi trace "
 	echo "2. Start a wifi trace for 100 packets"
-	echo "  3. set RBP directory"
-	echo "  4. set PC (remote) directory"
-	echo "  5. set number of packets for each segment"
-	echo "6. Help"
-	echo "7. Exit"
+	echo "3. Start a not segmented wifi trace "
+	echo "  4. set RBP directory"
+	echo "  5. set PC (remote) directory"
+	echo "  6. set number of packets for each segment"
+	echo "7. Help"
+	echo "8. Exit"
 	read opt
 	case $opt in
 		1)
@@ -189,29 +192,35 @@ function menu
 		;;
 		3)
 		headr $loc_dir $rem_dir $pac_num
-		setRBPpath
+		startTrace 2
 		headr $loc_dir $rem_dir $pac_num
 		menu
 		;;
 		4)
 		headr $loc_dir $rem_dir $pac_num
-		setPCpath
+		setRBPpath
 		headr $loc_dir $rem_dir $pac_num
 		menu
 		;;
 		5)
 		headr $loc_dir $rem_dir $pac_num
-		setpacketNum
+		setPCpath
 		headr $loc_dir $rem_dir $pac_num
 		menu
 		;;
 		6)
 		headr $loc_dir $rem_dir $pac_num
-		helpI
+		setpacketNum
 		headr $loc_dir $rem_dir $pac_num
 		menu
 		;;
 		7)
+		headr $loc_dir $rem_dir $pac_num
+		helpI
+		headr $loc_dir $rem_dir $pac_num
+		menu
+		;;
+		8)
 		exit 0
 		;;
 		*)

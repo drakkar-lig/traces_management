@@ -5,7 +5,6 @@
 #network and saves everything under a name with the date and hour
 #/////////////////////////////////////////////////////////////////////////////////////////
 #!/bin/bash
-# Argument = -t test -r server -p password -v
 
 usage()
 {
@@ -102,6 +101,7 @@ function gatewayTR
 	ifconfig>>$fileName-config.txt
 	printf "Wifi Config.\n__________________________________\n">>$fileName-config.txt
 	iwconfig>>$fileName-config.txt
+	lshw -C network>>$fileName-config.txt
 	sudo tshark -i wlan0 -a duration:$DUR -w $fileName.pcapng
 	printf "////////////////////////////////////////////////////////\nnote: the real start time is the endTime-duration\n////////////////////////////////////////////////////////\n" | cat - $fileName-config.txt > temp && mv temp $fileName-config.txt
 	echo " /    Program ended at            $(date +'%d/%m/%Y %H:%M:%S')" | cat - $fileName-config.txt > temp && mv temp $fileName-config.txt

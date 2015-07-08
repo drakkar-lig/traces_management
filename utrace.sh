@@ -202,17 +202,17 @@ function namer
 		fileName="${LocMachine}_${nowF}"
 		WFsnifferTR $1 $2
 		;;
-		c|ANDROID)
+		c|debian|ANDROID)
 		LocMachine="(client)_"
 		fileName="${LocMachine}_${nowF}"
 		clientTRSR
 		;;
-		g|drakkarexp1|drakkarexp4)
+		g|raspbian|drakkarexp1|drakkarexp4)
 		LocMachine="(gateway)_"
 		fileName="${LocMachine}_${nowF}"
 		gatewayTR $1 $2
 		;;
-		s|walt-OptiPlex-380)
+		s|ubuntu|walt-OptiPlex-380)
 		LocMachine="(server)_"
 		fileName="${LocMachine}_${nowF}"
 		serverTRSR
@@ -234,10 +234,6 @@ function hoster
 
 }
 
-function ble
-{
-	echo blestuff
-}
 
 #  ////////////////////////////////////////////////////////
 # ///////////////// PROGRAM //////////////////////////////
@@ -246,6 +242,7 @@ function ble
 #HN=`hostname`
 hoster
 len=0
+cha=1
 IPs="129.88.49.84"
 mode=""
 nowF="$(date +'%d%m%Y_%H%M%S')"

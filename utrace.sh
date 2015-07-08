@@ -92,11 +92,25 @@ function WFsnifferTR
 function gatewayTR
 {
 	#Raspberry Pi gateway
-	echo "[gateway] Configuring Cahnnel and starting trace"
-	#prepares a trace form the gateway
-#	sudo sed -i "27s/./channel=$2/" /etc/hostapd/hostapd.conf
-#	sudo service hostapd restart
-#	sudo ifconfig wlan0 192.168.42.1
+	echo "[gateway]Checking configuration..."
+	IPE=`ifconfig wlan0|grep inet`
+	if [ -z ${IPE:+x} ]; then
+        echo "[gateway]IP not found, configuring it..."
+        sudo ifconfig wlan0 192.168.42.1
+	fi
+
+	CH=( $(cat /etc/hostapd/hostapd.conf|grep channel|tr "=" "\n") )
+	CH=${CH[1]}
+	echo "[gateway]Current Channel:"$CH
+	if [ "${CH}" == "${2}" ]; then
+		echo "[gateway]Configuration correct, Starting trace"
+	else
+		echo "[gateway]Configuring Cahnnel and starting trace"
+		#prepares a trace form the gateway
+		sudo sed -i.bak "27s/.*/channel=$2/g" /etc/hostapd/hostapd.conf
+		sudo service hostapd restart
+		sudo ifconfig wlan0 192.168.42.1
+	fi
 	printf "__________________________________\nGATEWAY CONFIGURATION.\nnet Config.\n__________________________________\n">>$fileName-config.txt
 	ifconfig>>$fileName-config.txt
 	printf "Wifi Config.\n__________________________________\n">>$fileName-config.txt

@@ -130,9 +130,9 @@ function clientTRSR
 	#determine client root or not
 	RT=`echo "$USER"`
 	if [ RT == "root" ];then
-		cm="tshark -a duration:$DUR -w $fileName.pcapng"
+		cmm="tshark -a duration:$DUR -w $fileName.pcapng"
 	else
-		cm="sudo tshark -i wlan0 -a duration:$DUR -w $fileName.pcapng"
+		cmm="sudo tshark -i wlan0 -a duration:$DUR -w $fileName.pcapng"
 	fi
 	#command to iperf...
 	CM="iperf -c $IPs -i 1 -w 30000 -t $DUR -y C -m $mode"
@@ -146,7 +146,7 @@ function clientTRSR
 	iwconfig>>$fileName-config.txt
 	#starting parallel iperf/trace
 	$CM  >> $fileName-iperf.txt &
-	$cm &
+	$cmm &
 	wait
 	printf "$hc" | cat - $fileName-iperf.txt  > temp &&mv temp $fileName-iperf.txt
 	touch $fileName.pcapng
@@ -167,26 +167,24 @@ function serverTRSR
 {
 	#UBUNTU - home test MAC with home brew
 	echo "[server] entering mode: $HN"
-	CM="iperf -s -i 1 -V -y C $mode"
+	CMs="iperf -s -i 1 -V -y C $mode"
 	if [ "$mode" == "-u" ]; then
-		hcc=" UDP (cient)\ncommand: $CM \ntimestamp, ipS, portS, ipD, portD, interval, TRANSFER, BANDWIDTH, JITTER, LOST/,TOTAL, DATAGRAMS, ?\n"
+		hcc=" UDP (cient)\ncommand: $CMs \ntimestamp, ipS, portS, ipD, portD, interval, TRANSFER, BANDWIDTH, JITTER, LOST/,TOTAL, DATAGRAMS, ?\n"
 	else
-		hcc=" TCP (cient)\ncommand: $CM \ntimestamp, ipS, portS, ipD, portD, Interval, TRANSFER,BANDWIDTH\n"
+		hcc=" TCP (cient)\ncommand: $CMs \ntimestamp, ipS, portS, ipD, portD, Interval, TRANSFER,BANDWIDTH\n"
 	fi
 	hc="     ////////////////////////////////////////////////////\n$hcc////////////////////////////////////////////////////////\n"
 	printf "__________________________________\SERVER CONFIGURATION.\nnet Config.\n__________________________________\n">>$fileName-config.txt
 	ifconfig>>$fileName-config.txt
 	#starting parallel iperf/trace
-
-	timeout $DUR $CM >> $fileName-iperf.txt &
+	echo $CMs >> $fileName-iperf.txt &
+	timeout $DUR $CMs >> $fileName-iperf.txt &
 	sudo tshark -i eth0 -a duration:$DUR -w $fileName.pcapng &
-	#gtimeout $DUR $CM >> $fileName-iperf.txt &
-	#tshark -i en0 -a duration:$DUR -w $fileName.pcapng &
 	wait
 	echo "[serve] preparing files"
 	printf "$hc" | cat - $fileName-iperf.txt  > temp &&mv temp $fileName-iperf.txt
 	sudo touch $fileName.pcapng
-
+	sudo chmod 777 *
 	printf "////////////////////////////////////////////////////////\nnote: the real start time is the endTime-duration\n////////////////////////////////////////////////////////\n" | cat - $fileName-config.txt > temp && mv temp $fileName-config.txt
 	echo " /    Program ended at            $(date +'%d/%m/%Y %H:%M:%S')" | cat - $fileName-config.txt > temp && mv temp $fileName-config.txt
 	#echo $head2 | cat - $fileName-config.txt > temp && mv temp $fileName-config.txt

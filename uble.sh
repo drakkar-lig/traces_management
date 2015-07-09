@@ -84,6 +84,13 @@ function bleInfo
 		echo "[status] Dongle:"$bt_pres" Status:"$bt_stat
 	fi
 }
+function bleScan
+{
+        reb
+        timeout $DUR sudo hcitool lescan --duplicates>beacons.txt &
+        timeout $DUR sudo hcidump --raw -w ibeacons.log &
+        wait
+}
 ST=2
 DUR=300
 MODE="e"
@@ -149,10 +156,7 @@ if [ $len -gt 0 ]; then
 			echo "[ble]Can't complete task, bluetooth State:"$bt_stat
 			exit
 		else
-			reb
-			timeout $DUR sudo hcitool lescan --duplicates>beacons.txt &
-			timeout $DUR sudo hcidump --raw -w ibeacons.log &
-			wait
+			bleScan
 		fi
 	fi
 else

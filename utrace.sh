@@ -129,7 +129,7 @@ function clientTRSR
 	echo "[client] Starting transmition and trace"
 	#determine client root or not
 	RT=`echo "$USER"`
-	if [ RT == "root" ];then
+	if [ $RT == "root" ];then
 		cmm="tshark -a duration:$DUR -w $fileName.pcapng"
 	else
 		cmm="sudo tshark -i wlan0 -a duration:$DUR -w $fileName.pcapng"
@@ -145,6 +145,7 @@ function clientTRSR
 	printf "__________________________________\CLIENT CONFIGURATION.\nWifi Config.\n__________________________________\n">>$fileName-config.txt
 	iwconfig>>$fileName-config.txt
 	#starting parallel iperf/trace
+	echo $CM  >> $fileName-iperf.txt &
 	$CM  >> $fileName-iperf.txt &
 	$cmm &
 	wait
@@ -181,7 +182,7 @@ function serverTRSR
 	timeout $DUR $CMs >> $fileName-iperf.txt &
 	sudo tshark -i eth0 -a duration:$DUR -w $fileName.pcapng &
 	wait
-	echo "[serve] preparing files"
+	echo "[server] preparing files"
 	printf "$hc" | cat - $fileName-iperf.txt  > temp &&mv temp $fileName-iperf.txt
 	sudo touch $fileName.pcapng
 	sudo chmod 777 *
@@ -195,7 +196,7 @@ function namer
 {
 	#Give better names to known experiment machines $start $channel
 	case $HN in
-		f|osx)
+		f|osx|fedora)
 		LocMachine="(sniffer)_"
 		fileName="${LocMachine}_${nowF}"
 		WFsnifferTR $1 $2

@@ -11,7 +11,7 @@ usage()
 cat << EOF
 usage: $0 options
 
-Starts a configuration on the local machine to tansmit/receive/trace in UDP/TCP and will create a pseudo sincronous start with other machines, it will also create traces 
+Starts a configuration on the local machine to tansmit/receive/trace in UDP/TCP and will create a pseudo sincronous start with other machines, it will also create traces
 were possible
 
 OPTIONS:
@@ -25,7 +25,7 @@ OPTIONS:
    -i      information of the current machine
 EXAMPLES:
    The command:
-   		utrace -s 20150612153412 -c 6 -m t  	
+   		utrace -s 20150612153412 -c 6 -m t
    will start a trace in ~/work/TRACES/ at 15:34:12 5 min duration on channel 6
    or a TCP server/client for 5 minutes
    The command:
@@ -73,7 +73,7 @@ function WFsnifferTR
 {
 	#mac sniffer
 	#prepare interface
-	echo "configuring to capture 802.11 packets in Channel "$2
+	echo "[sniffer]configuring to capture 802.11 packets in Channel "$2
 	sudo airport -z
 	sudo airport -c$2
 #	echo $head>>$fileName-config.txt
@@ -92,16 +92,29 @@ function WFsnifferTR
 function gatewayTR
 {
 	#Raspberry Pi gateway
-	echo "[gateway] Configuring Cahnnel and starting trace"
-	#prepares a trace form the gateway
-	sudo sed -i "27s/./channel=$2/" /etc/hostapd/hostapd.conf
-	sudo service hostapd restart
-	sudo ifconfig wlan0 192.168.42.1
+	echo "[gateway]Checking configuration..."
+	IPE=`ifconfig wlan0|grep inet`
+	if [ -z ${IPE:+x} ]; then
+        echo "[gateway]IP not found, configuring it..."
+        sudo ifconfig wlan0 192.168.42.1
+	fi
+
+	CH=( $(cat /etc/hostapd/hostapd.conf|grep channel|tr "=" "\n") )
+	CH=${CH[1]}
+	echo "[gateway]Current Channel:"$CH
+	if [ "${CH}" == "${2}" ]; then
+		echo "[gateway]Configuration correct, Starting trace"
+	else
+		echo "[gateway]Configuring Cahnnel and starting trace"
+		#prepares a trace form the gateway
+		sudo sed -i.bak "27s/.*/channel=$2/g" /etc/hostapd/hostapd.conf
+		sudo service hostapd restart
+		sudo ifconfig wlan0 192.168.42.1
+	fi
 	printf "__________________________________\nGATEWAY CONFIGURATION.\nnet Config.\n__________________________________\n">>$fileName-config.txt
 	ifconfig>>$fileName-config.txt
 	printf "Wifi Config.\n__________________________________\n">>$fileName-config.txt
 	iwconfig>>$fileName-config.txt
-	lshw -C network>>$fileName-config.txt
 	sudo tshark -i wlan0 -a duration:$DUR -w $fileName.pcapng
 	printf "////////////////////////////////////////////////////////\nnote: the real start time is the endTime-duration\n////////////////////////////////////////////////////////\n" | cat - $fileName-config.txt > temp && mv temp $fileName-config.txt
 	echo " /    Program ended at            $(date +'%d/%m/%Y %H:%M:%S')" | cat - $fileName-config.txt > temp && mv temp $fileName-config.txt
@@ -114,6 +127,13 @@ function clientTRSR
 {
 	#Android CLient
 	echo "[client] Starting transmition and trace"
+	#determine client root or not
+	RT=`echo "$USER"`
+	if [ $RT == "root" ];then
+		cmm="tshark -a duration:$DUR -w $fileName.pcapng"
+	else
+		cmm="sudo tshark -i wlan0 -a duration:$DUR -w $fileName.pcapng"
+	fi
 	#command to iperf...
 	CM="iperf -c $IPs -i 1 -w 30000 -t $DUR -y C -m $mode"
 	if [ "$mode" == "-u" ]; then
@@ -125,9 +145,10 @@ function clientTRSR
 	printf "__________________________________\CLIENT CONFIGURATION.\nWifi Config.\n__________________________________\n">>$fileName-config.txt
 	iwconfig>>$fileName-config.txt
 	#starting parallel iperf/trace
+	echo $CM  >> $fileName-iperf.txt &
 	$CM  >> $fileName-iperf.txt &
-	tshark -a duration:$DUR -w $fileName.pcapng &
-	wait	
+	$cmm &
+	wait
 	printf "$hc" | cat - $fileName-iperf.txt  > temp &&mv temp $fileName-iperf.txt
 	touch $fileName.pcapng
 
@@ -136,7 +157,7 @@ function clientTRSR
 	#echo $head2 | cat - $fileName-config.txt > temp && mv temp $fileName-config.txt
 	printf "$head  /   trace duration:             $DUR segs\n" | cat - $fileName-config.txt > temp && mv temp $fileName-config.txt
 
-	#copy the files to the /tmp 
+	#copy the files to the /tmp
 	echo "[client] Transfering the files to /tmp"
 	cp -p $fileName-iperf.txt /tmp
 	cp -p $fileName-config.txt /tmp
@@ -146,54 +167,52 @@ function clientTRSR
 function serverTRSR
 {
 	#UBUNTU - home test MAC with home brew
-	echo "[server] entering mode: $HN"	
-	CM="iperf -s -i 1 -V -y C $mode"
+	echo "[server] entering mode: $HN"
+	CMs="iperf -s -i 1 -V -y C $mode"
 	if [ "$mode" == "-u" ]; then
-		hcc=" UDP (cient)\ncommand: $CM \ntimestamp, ipS, portS, ipD, portD, interval, TRANSFER, BANDWIDTH, JITTER, LOST/,TOTAL, DATAGRAMS, ?\n"
+		hcc=" UDP (cient)\ncommand: $CMs \ntimestamp, ipS, portS, ipD, portD, interval, TRANSFER, BANDWIDTH, JITTER, LOST/,TOTAL, DATAGRAMS, ?\n"
 	else
-		hcc=" TCP (cient)\ncommand: $CM \ntimestamp, ipS, portS, ipD, portD, Interval, TRANSFER,BANDWIDTH\n"
+		hcc=" TCP (cient)\ncommand: $CMs \ntimestamp, ipS, portS, ipD, portD, Interval, TRANSFER,BANDWIDTH\n"
 	fi
 	hc="     ////////////////////////////////////////////////////\n$hcc////////////////////////////////////////////////////////\n"
 	printf "__________________________________\SERVER CONFIGURATION.\nnet Config.\n__________________________________\n">>$fileName-config.txt
 	ifconfig>>$fileName-config.txt
 	#starting parallel iperf/trace
-
-	timeout $DUR $CM >> $fileName-iperf.txt &
+	echo $CMs >> $fileName-iperf.txt &
+	timeout $DUR $CMs >> $fileName-iperf.txt &
 	sudo tshark -i eth0 -a duration:$DUR -w $fileName.pcapng &
-	#gtimeout $DUR $CM >> $fileName-iperf.txt &
-	#tshark -i en0 -a duration:$DUR -w $fileName.pcapng &
 	wait
-	echo "[serve] preparing files"
+	echo "[server] preparing files"
 	printf "$hc" | cat - $fileName-iperf.txt  > temp &&mv temp $fileName-iperf.txt
 	sudo touch $fileName.pcapng
-
+	sudo chmod 777 *
 	printf "////////////////////////////////////////////////////////\nnote: the real start time is the endTime-duration\n////////////////////////////////////////////////////////\n" | cat - $fileName-config.txt > temp && mv temp $fileName-config.txt
 	echo " /    Program ended at            $(date +'%d/%m/%Y %H:%M:%S')" | cat - $fileName-config.txt > temp && mv temp $fileName-config.txt
 	#echo $head2 | cat - $fileName-config.txt > temp && mv temp $fileName-config.txt
 	printf "$head  /   trace duration:             $DUR segs\n" | cat - $fileName-config.txt > temp && mv temp $fileName-config.txt
 }
 
-function namer 
+function namer
 {
 	#Give better names to known experiment machines $start $channel
 	case $HN in
-		f|castillo.imag.fr|macbook-pro-de-pierangelo.home|MacBook-Pro-de-Pierangelo.local)
-		LocMachine="MAC(sniffer)_"
+		f|osx|fedora)
+		LocMachine="(sniffer)_"
 		fileName="${LocMachine}_${nowF}"
 		WFsnifferTR $1 $2
 		;;
-		c|ANDROID)
-		LocMachine="ANDROID(client)_"
+		c|debian|ANDROID)
+		LocMachine="(client)_"
 		fileName="${LocMachine}_${nowF}"
 		clientTRSR
 		;;
-		g|drakkarexp1|drakkarexp4)
-		LocMachine="RBP(gateway)_"
+		g|raspbian|drakkarexp1|drakkarexp4)
+		LocMachine="(gateway)_"
 		fileName="${LocMachine}_${nowF}"
 		gatewayTR $1 $2
 		;;
-		s|walt-OptiPlex-380)
-		LocMachine="UBUNTU(server)_"
+		s|ubuntu|walt-OptiPlex-380)
+		LocMachine="(server)_"
 		fileName="${LocMachine}_${nowF}"
 		serverTRSR
 		;;
@@ -203,11 +222,26 @@ function namer
 	esac
 }
 
+function hoster
+{
+	if [ -a  /etc/*-release ]; then
+		HN=`grep -v "_ID"  /etc/*-release|grep ID=`
+		HN=${HN##*=}
+	else
+		HN="osx"
+	fi
+
+}
+
+
 #  ////////////////////////////////////////////////////////
 # ///////////////// PROGRAM //////////////////////////////
 #////////////////////////////////////////////////////////
 
-HN=`hostname`
+#HN=`hostname`
+hoster
+len=0
+cha=1
 IPs="129.88.49.84"
 mode=""
 nowF="$(date +'%d%m%Y_%H%M%S')"
@@ -232,7 +266,7 @@ do
                 now="$(date +'%H%M%S')"
                 #waitt $1 $2 $channel
         	else
-                echo "use --14 digits date yyyymmddHHMMSS or 4 digits hour HHSSMM"
+                echo "use --14 digits date yyyymmddHHMMSS or 6 digits hour HHSSMM"
                 exit 1
         	fi
              ;;
@@ -267,8 +301,19 @@ do
              ;;
      esac
 done
-waitt $startAT $cha
-head="$head`echo "   /  Program start request at    $(date +'%d/%m/%Y %H:%M:%S')\n"`"
-echo "[trace/service]requesting start..."
-namer $startAT $cha
-echo "[utrace] All task done..."
+if [ $len -gt 0 ]; then
+	waitt $startAT $cha
+	head="$head`echo "   /  Program start request at    $(date +'%d/%m/%Y %H:%M:%S')\n"`"
+	echo "[trace/service]requesting start..."
+	namer $startAT $cha
+	
+	if [ RT == "root" ];then
+		echo "[utrace] All task done..."
+	else
+		sudo chmod 777 *
+		echo "[utrace] All task done..."
+	fi
+else
+	echo "[utrace] Write utrace -h for usage"
+fi
+

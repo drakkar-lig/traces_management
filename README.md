@@ -11,26 +11,22 @@ Android phone acting as a TCP Client transmitting to a Ubuntu TCP server through
 
 topology:
 								
-Client[Debian] 	<----(Wi-Fi)---> 	Access Point[raspbian] 	<--(Ethernet)--> 	Server[Ubuntu]
+		Client[Debian] 	<----(Wi-Fi)---> 	Access Point[raspbian] 	<--(Ethernet)--> 	Server[Ubuntu]
 
 		Wi-Fi Sniffer[Mac]
 
-Client[Debian]	<---(ibeacon)---	Access Point[raspbian]
+		Client[Debian]	<---(ibeacon)---	Access Point[raspbian]
 
 		BLE Sniffer[Raspbian]						
 								
 							
 commands:
 
-[Client]				utrace -d 300 -k c -a 129.88.49.84 -s 175005
-
-[Server]				utrace -d 310 -k s -s 175000
-
-[Access Point]	utrace -d 300 -k g -c 1 -s 175000
-
-[Wi-Fi Sniffer]	utrace -d 300 -k f -c 1 -s 175000
-
-[BLE Sniffer]		uble -s 175000
+		[Client]				utrace -d 300 -k c -a 129.88.49.84 -s 175005
+		[Server]				utrace -d 310 -k s -s 175000
+		[Access Point]	utrace -d 300 -k g -c 1 -s 175000
+		[Wi-Fi Sniffer]	utrace -d 300 -k f -c 1 -s 175000
+		[BLE Sniffer]		uble -s 175000
 
 EXAMPLE 2:
 
@@ -38,12 +34,11 @@ A simple UDP client server that collects th Network info and traces in every poi
 
 topology:
 
-Client[Linux] 	<--(Ethernet)--> 	Access Point[raspbian] 	<--(Ethernet)--> 	Server
+		Client[Linux] 	<--(Ethernet)--> 	Access Point[raspbian] 	<--(Ethernet)--> 	Server
 
 commands:
 
-[Client]				utrace -d 300 -k c -a 129.88.49.84 -m u -s 120005
-
-[Server]				utrace -d 310 -k s -m u -s 120000
+		[Client]				utrace -d 300 -k c -a 129.88.49.84 -m u -s 120005
+		[Server]				utrace -d 310 -k s -m u -s 120000
 
 [Access Point]	utrace -d 300 -k g -c 1 -s 120000
